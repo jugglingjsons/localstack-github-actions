@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+
+jobs:
+  test:
+    services:
+      localstack:
+        image: localstack/localstack
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: sqs
+          SQS_PROVIDER: elasticmq
+          DOCKER_HOST: unix:///var/run/docker.sock
+        volumes:
+          - ${{ github.workspace }}/bootstrap-localstack:/docker-entrypoint-initaws.d/
+        options: >-
+          --name=localstack
+          --health-cmd="curl -sS 127.0.0.1:4566 || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    runs-on: ubuntu-latest
+    steps:
+      - name: curl localstack
+        run: curl 127.0.0.1:4566
+      - name: curl localstack
+        run: curl localhost:4566
+      - name: check queue
+        run: aws sqs receive-message --queue-url "http://localhost:4566/000000000000/test-queue" --region eu-west-1 --endpoint-url http://localhost:4566
